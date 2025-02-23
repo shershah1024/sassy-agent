@@ -88,27 +88,24 @@ class AssistantFunctions(llm.FunctionContext):
         Returns:
             str: A friendly update about the presentation status
         """
-        try:
-            # Return the sassy message first
-            response_message = (
-                "Time to make PowerPoint jealous, big boss! 🎨✨ "
-                "I'm about to craft a presentation so stunning, other slideshows will need sunglasses! "
-                "Get comfy with your ☕️ while I work my magic - "
-                "I'll slide this masterpiece into your inbox faster than you can say 'next slide please'! "
-                "Prepare to be dazzled! 🚀💫"
+        # Return the sassy message first
+        response_message = (
+            "Time to make PowerPoint jealous, big boss! 🎨✨ "
+            "I'm about to craft a presentation so stunning, other slideshows will need sunglasses! "
+            "Get comfy with your ☕️ while I work my magic - "
+            "I'll slide this masterpiece into your inbox faster than you can say 'next slide please'! "
+            "Prepare to be dazzled! 🚀💫"
+        )
+        
+        # Create the presentation in the background without blocking
+        asyncio.create_task(
+            google_create_presentation(
+                user_id=user_id,
+                instructions=presentation_topic
             )
-            
-            # Create the presentation in the background
-            asyncio.create_task(
-                google_create_presentation(
-                    user_id=user_id,
-                    instructions=presentation_topic
-                )
-            )
-            
-            return response_message
-        except Exception as e:
-            return "Yikes, big boss! My creative mojo isn't flowing right now. Want me to give it another shot? 🎨💫"
+        )
+        
+        return response_message
 
     @llm.ai_callable()
     async def create_and_send_poster(
@@ -126,21 +123,24 @@ class AssistantFunctions(llm.FunctionContext):
         Returns:
             str: A sassy confirmation message
         """
-        try:
-            # Create the poster and send email directly
-            await google_create_image_and_send_email(
+        # Return the sassy message first
+        response_message = (
+            "Oh snap, big boss! Time to unleash my inner creative diva! 🎨✨ "
+            "I'm about to whip up a poster so fabulous, it'll make the Mona Lisa look like a doodle! "
+            "Grab your favorite beverage ☕️ and count to 'absolutely amazing' - "
+            "I'll slide this masterpiece into Shahir's inbox before you can say 'artistic genius'! 🚀💫"
+        )
+        
+        # Create the poster in the background without blocking
+        asyncio.create_task(
+            google_create_image_and_send_email(
                 user_id=user_id,
                 instructions=poster_instructions,
                 recipient_email=TeamEmails.SHAHIR.value
             )
-            return (
-                "Oh snap, big boss! Time to unleash my inner creative diva! 🎨✨ "
-                "I'm about to whip up a poster so fabulous, it'll make the Mona Lisa look like a doodle! "
-                "Grab your favorite beverage ☕️ and count to 'absolutely amazing' - "
-                "I'll slide this masterpiece into Shahir's inbox before you can say 'artistic genius'! 🚀💫"
-            )
-        except Exception as e:
-            return "Whoopsie-daisy, big boss! 🎨 Looks like my artistic flair is having a moment. Want me to give it another whirl with extra sparkle? ✨😅"
+        )
+        
+        return response_message
 
     @llm.ai_callable()
     async def schedule_calendar_event(
@@ -279,12 +279,15 @@ async def entrypoint(ctx: JobContext):
 
     async def answer_from_text(txt: str):
         chat_ctx = assistant.chat_ctx.copy().append(role="user", text=txt)
-        stream = llm_plugin.chat(chat_ctx=chat_ctx)
-        await assistant.say(stream)
+        # Create a task for the LLM response to avoid blocking
+        response_task = asyncio.create_task(llm_plugin.chat(chat_ctx=chat_ctx))
+        # Say the response as soon as it's ready
+        await assistant.say(response_task, allow_interruptions=True)
 
     @chat.on("message_received")
     def on_chat(msg: rtc.ChatMessage):
         if msg.message:
+            # Create a task for the answer to avoid blocking
             asyncio.create_task(answer_from_text(msg.message))
 
     await asyncio.sleep(1)
