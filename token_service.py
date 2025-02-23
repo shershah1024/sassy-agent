@@ -103,12 +103,14 @@ class TokenService:
                 client_id=os.getenv('GOOGLE_CLIENT_ID'),
                 client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
                 scopes=[
-                    'https://www.googleapis.com/auth/calendar.events',  # View and edit events on all calendars
-                    'https://www.googleapis.com/auth/calendar.app.created',  # Make secondary calendars and manage events
-                    'https://www.googleapis.com/auth/drive.file',  # Access to specific Drive files
-                    'https://www.googleapis.com/auth/presentations',  # Full access to Slides
-                    'https://www.googleapis.com/auth/gmail.modify',  # Read, compose, and send emails
-                    'https://www.googleapis.com/auth/documents'  # Access to Docs
+                    'https://www.googleapis.com/auth/calendar.events',
+                    'https://www.googleapis.com/auth/calendar.app.created',
+                    'https://www.googleapis.com/auth/drive.file',
+                    'https://www.googleapis.com/auth/presentations',
+                    'https://www.googleapis.com/auth/gmail.modify',
+                    'https://www.googleapis.com/auth/gmail.send',
+                    'https://www.googleapis.com/auth/gmail.readonly',
+                    'https://www.googleapis.com/auth/documents'
                 ]
             )
 

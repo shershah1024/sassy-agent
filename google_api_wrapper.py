@@ -6,6 +6,10 @@ from datetime import datetime
 import base64
 import os
 from presentation_service import PresentationService
+from image_service import ImageService
+from recraft_storage import RecraftStorage
+from poster_service import PosterContent, PosterStyle, IllustrationStyle, ImageSize, PosterService
+from email_utils import send_email_with_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -45,32 +49,22 @@ async def send_email(
         if body is None:
             body = instructions
         
-        # Build Gmail service with correct scope
-        gmail_service = build('gmail', 'v1', credentials=credentials)
-        
-        # Get user's email address for the 'from' field
-        user_profile = gmail_service.users().getProfile(userId='me').execute()
-        sender_email = user_profile['emailAddress']
-        
-        message = {
-            'raw': _create_message(sender_email, recipient_email, subject, body)
-        }
-        
-        # Send the email
-        result = gmail_service.users().messages().send(userId='me', body=message).execute()
-        logger.info(f"Email sent successfully to {recipient_email}")
-        logger.info(f"Message ID: {result.get('id')}")
-        return result
+        return await send_email_with_credentials(
+            credentials=credentials,
+            recipient_email=recipient_email,
+            subject=subject,
+            body=body
+        )
         
     except Exception as e:
         logger.error(f"Error sending email: {str(e)}")
         raise
 
-def read_emails(user_id: str, instructions: str) -> List[Dict[str, Any]]:
+async def read_emails(user_id: str, instructions: str) -> List[Dict[str, Any]]:
     """Read emails based on instructions"""
     try:
         service = PresentationService()
-        credentials = service.get_presentation_credentials(user_id)
+        credentials = await service.get_presentation_credentials(user_id)
         if not credentials:
             raise ValueError("Invalid credentials")
 
@@ -200,20 +194,60 @@ async def create_presentation(user_id: str, instructions: str) -> str:
         raise
 
 # Helper Functions
-def _create_message(sender: str, to: str, subject: str, message_text: str) -> str:
-    """Create a base64url encoded email message."""
-    from email.mime.text import MIMEText
-    import base64
+def _create_message(sender: str, to: str, subject: str, body: str) -> str:
+    """Create a base64url encoded email message"""
+    message = f"From: {sender}\nTo: {to}\nSubject: {subject}\n\n{body}"
+    return base64.urlsafe_b64encode(message.encode()).decode()
+
+async def create_image_and_send_email(
+    user_id: str,
+    instructions: str,
+    recipient_email: str = DEFAULT_RECIPIENT_EMAIL
+) -> Dict[str, Any]:
+    """
+    Create an AI-generated poster based on instructions and send it via email
     
-    # Create the message
-    message = MIMEText(message_text)
-    message['to'] = to
-    message['from'] = sender
-    message['subject'] = subject
+    Args:
+        user_id: The user's ID for authentication
+        instructions: Natural language instructions for what kind of poster to create
+        recipient_email: Email address of the recipient (optional)
     
-    # Encode the message
-    encoded_message = base64.urlsafe_b64encode(message.as_string().encode('utf-8')).decode('utf-8')
-    return encoded_message
+    Returns:
+        Dict[str, Any]: Response containing status and image URL
+    """
+    try:
+        # Initialize PosterService
+        poster_service = PosterService()
+        
+        # Generate the poster and get email content
+        stored_url, email_content = await poster_service.create_design(
+            topic=instructions
+        )
+        
+        if not stored_url or not email_content:
+            raise ValueError("Failed to generate poster")
+            
+        # Send the email with the poster URL
+        await send_email(
+            user_id=user_id,
+            instructions="",
+            recipient_email=recipient_email,
+            subject=email_content.subject,
+            body=f"{email_content.body}\n\nView your design here: {stored_url}"
+        )
+            
+        return {
+            "status": "success",
+            "image_url": stored_url,
+            "message": f"Poster created and sent to {recipient_email}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating poster: {str(e)}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 async def main():
     """Main entry point for creating presentations"""

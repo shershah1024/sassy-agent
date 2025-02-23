@@ -11,6 +11,7 @@ from google_api_wrapper import create_presentation as google_create_presentation
 from google_api_wrapper import read_emails as google_read_emails
 from google_api_wrapper import list_events as google_list_events
 from google_api_wrapper import create_event as google_create_event
+from google_api_wrapper import create_image_and_send_email as google_create_image_and_send_email
 
 class TeamEmails(str, Enum):
     """Team member email mappings with friendly names"""
@@ -104,6 +105,40 @@ class AssistantFunctions(llm.FunctionContext):
             )
         except Exception as e:
             return "Yikes, big boss! My creative mojo isn't flowing right now. Want me to give it another shot? 🎨💫"
+
+    @llm.ai_callable()
+    async def create_and_send_poster(
+        self,
+        poster_instructions: Annotated[str, llm.TypeInfo(description="What kind of poster you want to create")],
+        user_id: Annotated[str, llm.TypeInfo(description="User's Google account ID")] = DEFAULT_USER_ID
+    ) -> str:
+        """
+        Create a poster and send it via email with extra sass
+        
+        Args:
+            poster_instructions: Description of what kind of poster to create
+            user_id: User's Google account ID
+            
+        Returns:
+            str: A sassy confirmation message
+        """
+        try:
+            # Start the poster creation and email sending in the background
+            asyncio.create_task(
+                google_create_image_and_send_email(
+                    user_id=user_id,
+                    instructions=poster_instructions,
+                    recipient_email=TeamEmails.SHAHIR.value
+                )
+            )
+            return (
+                "Oh snap, big boss! Time to unleash my inner creative diva! 🎨✨ "
+                "I'm about to whip up a poster so fabulous, it'll make the Mona Lisa look like a doodle! "
+                "Grab your favorite beverage ☕️ and count to 'absolutely amazing' - "
+                "I'll slide this masterpiece into Shahir's inbox before you can say 'artistic genius'! 🚀💫"
+            )
+        except Exception as e:
+            return "Whoopsie-daisy, big boss! 🎨 Looks like my artistic flair is having a moment. Want me to give it another whirl with extra sparkle? ✨😅"
 
     @llm.ai_callable()
     async def schedule_calendar_event(
