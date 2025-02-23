@@ -33,7 +33,6 @@ class TeamEmails(str, Enum):
 
 # Constants
 DEFAULT_USER_ID = "107085158246892440905"
-PRESENTATION_RECIPIENTS = [TeamEmails.SHAHIR.value, TeamEmails.JOSE.value]
 
 class AssistantFunctions(llm.FunctionContext):
     def __init__(self):
@@ -90,19 +89,24 @@ class AssistantFunctions(llm.FunctionContext):
             str: A friendly update about the presentation status
         """
         try:
-            # Start the presentation creation in the background
+            # Return the sassy message first
+            response_message = (
+                "Time to make PowerPoint jealous, big boss! 🎨✨ "
+                "I'm about to craft a presentation so stunning, other slideshows will need sunglasses! "
+                "Get comfy with your ☕️ while I work my magic - "
+                "I'll slide this masterpiece into your inbox faster than you can say 'next slide please'! "
+                "Prepare to be dazzled! 🚀💫"
+            )
+            
+            # Create the presentation in the background
             asyncio.create_task(
                 google_create_presentation(
                     user_id=user_id,
-                    instructions=presentation_topic,
-                    recipients=PRESENTATION_RECIPIENTS
+                    instructions=presentation_topic
                 )
             )
-            return (
-                "On it, big boss! 🎨 I'm whipping up a presentation that'll make PowerPoint jealous! "
-                "Just sit back, maybe grab a coffee ☕️, and I'll slide that masterpiece into your email when it's ready. "
-                "Don't worry, I'll make sure both you and Jose get a copy! ✨"
-            )
+            
+            return response_message
         except Exception as e:
             return "Yikes, big boss! My creative mojo isn't flowing right now. Want me to give it another shot? 🎨💫"
 
@@ -123,13 +127,11 @@ class AssistantFunctions(llm.FunctionContext):
             str: A sassy confirmation message
         """
         try:
-            # Start the poster creation and email sending in the background
-            asyncio.create_task(
-                google_create_image_and_send_email(
-                    user_id=user_id,
-                    instructions=poster_instructions,
-                    recipient_email=TeamEmails.SHAHIR.value
-                )
+            # Create the poster and send email directly
+            await google_create_image_and_send_email(
+                user_id=user_id,
+                instructions=poster_instructions,
+                recipient_email=TeamEmails.SHAHIR.value
             )
             return (
                 "Oh snap, big boss! Time to unleash my inner creative diva! 🎨✨ "

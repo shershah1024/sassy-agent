@@ -44,12 +44,7 @@ class PresentationService:
                 token=access_token,
                 token_uri='https://oauth2.googleapis.com/token',
                 client_id=os.getenv('GOOGLE_CLIENT_ID'),
-                client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-                scopes=[
-                    'https://www.googleapis.com/auth/presentations',
-                    'https://www.googleapis.com/auth/gmail.modify',  # Added Gmail scope
-                    'https://www.googleapis.com/auth/gmail.send'     # Added Gmail send scope
-                ]
+                client_secret=os.getenv('GOOGLE_CLIENT_SECRET')
             )
             return credentials
         except Exception as e:
@@ -117,13 +112,28 @@ class PresentationService:
                     # First item is left column content, second item is right column content
                     if not slide_content.content or len(slide_content.content) < 2:
                         logger.warning(f"Insufficient content for two-column slide {i + 1}")
-                        content['leftContent'] = "Benefits:\n- Increased efficiency\n- Better accuracy\n- Cost reduction"
-                        content['rightContent'] = "Challenges:\n- Implementation costs\n- Training requirements\n- Change management"
+                        content['leftContent'] = "No content provided for left column"
+                        content['rightContent'] = "No content provided for right column"
                     else:
-                        # Ensure content is properly formatted for columns
-                        content['leftContent'] = slide_content.content[0].replace('leftContent:', '').strip()
-                        content['rightContent'] = slide_content.content[1].replace('rightContent:', '').strip()
-                        logger.info(f"Two-column content: Left={content['leftContent']}, Right={content['rightContent']}")
+                        # Process each column's content
+                        left_content = ""
+                        right_content = ""
+                        
+                        for item in slide_content.content:
+                            if "leftContent:" in item:
+                                left_content = item.replace('leftContent:', '').strip()
+                            elif "rightContent:" in item:
+                                right_content = item.replace('rightContent:', '').strip()
+                        
+                        # If no explicit left/right content found, use first two items
+                        if not left_content and not right_content and len(slide_content.content) >= 2:
+                            left_content = slide_content.content[0]
+                            right_content = slide_content.content[1]
+                        
+                        content['leftContent'] = left_content or "No content provided for left column"
+                        content['rightContent'] = right_content or "No content provided for right column"
+                        
+                        logger.info(f"Two-column content processed - Left: {content['leftContent'][:50]}..., Right: {content['rightContent'][:50]}...")
                 elif slide_type == SlideType.IMAGE_CENTERED:
                     if slide_content.images:
                         content['imageUrl'] = slide_content.images[0]
@@ -155,48 +165,48 @@ class PresentationService:
             email: EmailContent
 
         try:
-            instructions = f"""
-            Create a presentation structure about {topic} with exactly 7 slides.
-            Each slide MUST have a clear, descriptive title that reflects its content.
-            Make the content engaging and informative.
+            instructions = f"""Create a compelling {num_slides}-slide presentation about {topic}.
 
-            SLIDE STRUCTURE (exactly in this order):
-            1. Title slide (TITLE_GRADIENT layout) - with a compelling title and subtitle that captures the essence of {topic}
-            2. Overview slide (BULLET_POINTS layout) - title should be "Overview" or similar, with 4-5 key points about the topic
-            3. Image slide (IMAGE_CENTERED layout) - title should describe what the image will show, This is the ONLY slide that should have an image
-            4. Two-column comparison slide (TWO_COLUMNS_EQUAL layout) - title should reflect the comparison being made
-            5. Detailed analysis (TWO_COLUMNS_LEFT_WIDE layout) - title should indicate the analysis focus
-            6. Key findings (NUMBER_POINTS layout) - title should be "Key Findings" or similar
-            7. Summary slide (TITLE_LEFT layout) - title should be "Summary" or "Conclusion"
+For each slide, provide:
+1. A clear, engaging title
+2. The appropriate slide layout type from these options:
+   - TITLE: Opening slide with title and subtitle
+   - SECTION: Section header with title
+   - BULLETS: Bullet points
+   - TWO_COLUMNS_EQUAL: Two equal columns
+   - TWO_COLUMNS_LEFT_WIDE: Two columns with wider left column
+   - TWO_COLUMNS_RIGHT_WIDE: Two columns with wider right column
+   - IMAGE_CENTERED: Centered image with optional caption
+   - QUOTE: Featured quote
+   - CLOSING: Closing slide
 
-            For the image slide ONLY, provide a detailed image prompt in this format:
-            "Professional photograph of [subject], [specific details], [style elements], [lighting], [composition]"
+3. Content appropriate for the layout:
+   - For TITLE slides: Include a subtitle
+   - For SECTION slides: Just the title is sufficient
+   - For BULLETS: List 3-5 key points
+   - For TWO_COLUMNS slides: MUST provide content in this format:
+     ["leftContent: [Your left column content here]", "rightContent: [Your right column content here]"]
+   - For IMAGE_CENTERED: Provide an image description or placeholder
+   - For QUOTE: Provide the quote and attribution
+   - For CLOSING: Include a summary or call to action
 
-            For TWO_COLUMNS slides, provide content in this format:
-            leftContent: [content for left column]
-            rightContent: [content for right column]
+4. For image slides, provide a clear description of what the image should show.
 
-            THEME SELECTION:
-            Choose one of these themes based on the topic and content:
-            - MIDNIGHT: Deep blue with modern accents (perfect for tech, space, or night-themed topics)
-            - SUNSET: Modern gradient from purple to orange (great for creative or nature topics)
-            - FOREST: Rich greens with earth tones (ideal for environmental or natural topics)
-            - TECH: Modern tech-inspired theme (suited for technology and innovation topics)
-            - MINIMAL: Clean, minimal design (professional and versatile)
+IMPORTANT RULES:
+1. For TWO_COLUMNS slides, you MUST provide exactly two items in the content array:
+   - First item must start with "leftContent:" followed by the content
+   - Second item must start with "rightContent:" followed by the content
+2. Never leave content empty for any slide type
+3. For SECTION slides, include 1-2 key points in the content array
+4. For BULLETS slides, always provide 3-5 bullet points
 
-            EMAIL CONTENT:
-            Also generate a professional and engaging email to accompany the presentation:
-            1. Subject line: Should be catchy and descriptive
-            2. Body: Should include:
-               - Warm greeting
-               - Brief introduction of the presentation
-               - Key highlights of what's included
-               - Clear call-to-action to view the presentation
-               - Professional closing with "Best regards, Shahir"
-               Make it friendly but professional in tone.
+Also suggest:
+1. A presentation theme from these options: MIDNIGHT, SUNSET, FOREST, TECH, MINIMAL
+2. A professional email to accompany the presentation
 
-            Return the slides array, selected theme name, and email content.
-            """
+Make the content engaging, professional, and well-structured.
+Ensure smooth transitions between slides and a clear narrative flow.
+"""
 
             response = await structured_openai_completion(
                 instructions=instructions,
@@ -206,17 +216,34 @@ class PresentationService:
             )
 
             slides = response.slides
-            theme = response.theme if hasattr(response, 'theme') else "TECH"
+            # Ensure we use a valid theme
+            theme = response.theme.upper() if hasattr(response, 'theme') else "TECH"
+            if theme not in ["MIDNIGHT", "SUNSET", "FOREST", "TECH", "MINIMAL"]:
+                logger.warning(f"Invalid theme {theme}, defaulting to TECH")
+                theme = "TECH"
+            
             email_content = response.email if hasattr(response, 'email') else EmailContent(
                 subject=f"Your Presentation: {slides[0].title if slides else 'New Presentation'} is Ready!",
                 body=f"Your AI-generated presentation is ready to view.\n\nBest regards,\nShahir"
             )
             
-            logger.info(f"Selected theme: {theme}")
+            logger.info(f"Using theme: {theme}")
             logger.info(f"Email subject: {email_content.subject}")
             
             # Ensure only the third slide (index 2) has an image
             for i, slide in enumerate(slides):
+                # Ensure SECTION slides have content
+                if slide.layout == "SECTION" and not slide.content:
+                    slide.content = [slide.title]
+                
+                # Ensure TWO_COLUMNS slides have proper content
+                if slide.layout in ["TWO_COLUMNS_EQUAL", "TWO_COLUMNS_LEFT_WIDE", "TWO_COLUMNS_RIGHT_WIDE"]:
+                    if not slide.content or len(slide.content) < 2:
+                        slide.content = [
+                            f"leftContent: Key points about {slide.title}",
+                            f"rightContent: Details about {slide.title}"
+                        ]
+                
                 if i == 2:  # Third slide
                     if not slide.imagePlaceholder and not slide.images:
                         # Generate image prompt if not provided
@@ -247,14 +274,14 @@ class PresentationService:
                     slide.imagePlaceholder = None
                     slide.images = None
 
+            if not slides:
+                raise ValueError("Failed to generate presentation content: No slides were created")
+                
             return slides, theme, email_content
 
         except Exception as e:
             logger.error(f"Error generating presentation content: {str(e)}")
-            return [], "TECH", EmailContent(
-                subject="Your Presentation is Ready",
-                body="Your AI-generated presentation is ready to view."
-            )
+            raise ValueError(f"Failed to generate presentation content: {str(e)}")
 
     async def create_presentation_from_topic(
         self, 
@@ -264,21 +291,23 @@ class PresentationService:
         num_slides: int = 5,
         generate_images: bool = True,
         theme: str = "TECH"
-    ) -> Optional[str]:
+    ) -> str:
         """Create a presentation from a topic using AI-generated content"""
         try:
             # Generate content with image prompts
             slides, suggested_theme, email_content = await self.generate_presentation_content(topic, num_slides, generate_images=True)
-            if not slides:
-                return None
-
+            
             # Use the AI-suggested theme unless explicitly overridden
             final_theme = theme if theme != "TECH" else suggested_theme
             logger.info(f"Using theme: {final_theme}")
 
             # Create presentation with the processed slides and theme
-            return await self.create_presentation(user_id, title, slides, final_theme)
+            presentation_id = await self.create_presentation(user_id, title, slides, final_theme)
+            if not presentation_id:
+                raise ValueError("Failed to create presentation: No presentation ID returned")
+                
+            return presentation_id
 
         except Exception as e:
             logger.error(f"Error creating presentation from topic: {str(e)}")
-            return None 
+            raise ValueError(f"Failed to create presentation: {str(e)}") 

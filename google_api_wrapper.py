@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 from datetime import datetime
 import base64
 import os
+import asyncio
 from presentation_service import PresentationService
 from image_service import ImageService
 from recraft_storage import RecraftStorage
@@ -250,20 +251,48 @@ async def create_image_and_send_email(
         }
 
 async def main():
-    """Main entry point for creating presentations"""
+    """Main entry point for testing presentation creation"""
     try:
-        user_id = "107085158246892440905"  # Replace with actual user ID
-        instructions = "Healthy living in green spaces"
+        user_id = "107085158246892440905"
+        
+        # Test case for presentation
+        instructions = """Modern Web Development Best Practices
+
+Create an informative presentation covering:
+- Latest frontend frameworks and tools
+- Backend architecture patterns
+- DevOps and CI/CD practices
+- Performance optimization techniques
+- Security best practices
+- Mobile-first design principles
+- Future trends and predictions"""
+
+        logger.info("Starting presentation creation test...")
+        logger.info(f"Using user_id: {user_id}")
+        logger.info(f"Instructions:\n{instructions}")
         
         presentation_url = await create_presentation(
             user_id=user_id,
             instructions=instructions
         )
-        print(f"Presentation created successfully! View at: {presentation_url}")
         
+        if presentation_url:
+            logger.info(f"✅ Success! Presentation created successfully!")
+            logger.info(f"View your presentation at: {presentation_url}")
+        else:
+            logger.error("❌ Failed to get presentation URL")
+            
     except Exception as e:
-        print(f"Error creating presentation: {str(e)}")
+        logger.error(f"❌ Error in presentation creation: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 if __name__ == "__main__":
-    import asyncio
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # Run the test
     asyncio.run(main())

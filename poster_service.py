@@ -87,11 +87,16 @@ class PosterService:
         2. Write a clear description of what the design should visually communicate
         3. Include a short, impactful text overlay (tagline or call to action)
         4. Choose the most appropriate visual style from these options:
-           - POSTER_DIGITAL: Best for posters and marketing materials (2D art poster style)
-           - LOGO_VECTOR: Best for logos and brand assets (clean vector art)
-           - REALISTIC_PHOTO: Best for product mockups and realistic scenes
-           - MODERN_MINIMAL: Best for clean, minimalist designs
-           - NEON_FUTURISTIC: Best for tech and futuristic themes
+           - POSTER_DIGITAL: Best for posters and marketing materials (digital_illustration/2d_art_poster)
+           - BOLD_VECTOR: Best for logos and brand assets (vector_illustration/bold_stroke)
+           - REALISTIC: Best for realistic scenes (realistic_image/natural_light)
+           - MODERN_MINIMAL: Best for clean, minimalist designs (digital_illustration/modern_folk)
+           - NEON_FUTURISTIC: Best for tech themes (digital_illustration/neon_calm)
+           - URBAN: Best for urban and street themes (digital_illustration/urban_glow)
+           - POP_ART: Best for vibrant designs (digital_illustration/pop_art)
+           - HAND_DRAWN: Best for organic feel (digital_illustration/hand_drawn)
+           - PIXEL_ART: Best for retro style (digital_illustration/pixel_art)
+           - INFOGRAPHIC: Best for data visualization (vector_illustration/infographical)
 
         5. Choose the most appropriate size format based on the content:
            - SQUARE_HD: 1080x1080 - Best for high-detail square images (social media, logos)

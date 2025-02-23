@@ -101,17 +101,7 @@ class TokenService:
                 refresh_token=auth_record['refresh_token'],
                 token_uri='https://oauth2.googleapis.com/token',
                 client_id=os.getenv('GOOGLE_CLIENT_ID'),
-                client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-                scopes=[
-                    'https://www.googleapis.com/auth/calendar.events',
-                    'https://www.googleapis.com/auth/calendar.app.created',
-                    'https://www.googleapis.com/auth/drive.file',
-                    'https://www.googleapis.com/auth/presentations',
-                    'https://www.googleapis.com/auth/gmail.modify',
-                    'https://www.googleapis.com/auth/gmail.send',
-                    'https://www.googleapis.com/auth/gmail.readonly',
-                    'https://www.googleapis.com/auth/documents'
-                ]
+                client_secret=os.getenv('GOOGLE_CLIENT_SECRET')
             )
 
             # Refresh the token
